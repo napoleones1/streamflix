@@ -274,7 +274,7 @@ This project is licensed under the MIT License.
 ## 👨‍💻 Author
 
 **Muhamad Haikal**
-- Email: ahmadlutpillah14@gmail.com
+- Email: muhamadhaikal.me@gmail.com
 
 ## 🙏 Acknowledgments
 
@@ -285,7 +285,7 @@ This project is licensed under the MIT License.
 
 ## � Support
 
-For support, email ahmadlutpillah14@gmail.com or create an issue in the repository.
+For support, email muhamadhaikal.me@gmail.com or create an issue in the repository.
 
 ---
 
