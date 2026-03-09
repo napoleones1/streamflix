@@ -108,6 +108,9 @@ export default function Browse() {
         params.append('category', searchParams.get('category'));
       }
       
+      // Add limit for performance
+      params.append('limit', '50');
+      
       const { data } = await axios.get(`/api/videos?${params}`);
       
       // Apply client-side filtering and sorting

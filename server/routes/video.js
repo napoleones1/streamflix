@@ -9,7 +9,7 @@ const router = express.Router();
 // Search videos
 router.get('/search', async (req, res) => {
   try {
-    const { q, filter } = req.query;
+    const { q, filter, limit = 50 } = req.query;
     
     if (!q) {
       return res.json([]);
@@ -31,7 +31,7 @@ router.get('/search', async (req, res) => {
     const videos = await Video.find(query)
       .populate('creator', 'username channelName avatar channelBanner channelDescription subscribers isVerified role')
       .sort('-views')
-      .limit(50);
+      .limit(parseInt(limit));
     
     res.json(videos);
   } catch (error) {
@@ -41,7 +41,7 @@ router.get('/search', async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-    const { type, category, search, contentType } = req.query;
+    const { type, category, search, contentType, limit = 30 } = req.query;
     let query = {};
     
     if (type) query.type = type;
@@ -77,7 +77,8 @@ router.get('/', async (req, res) => {
     
     const videos = await Video.find(query)
       .populate('creator', 'username channelName avatar channelBanner channelDescription subscribers isVerified role')
-      .sort('-createdAt');
+      .sort('-createdAt')
+      .limit(parseInt(limit)); // Add limit
     
     // Auto-calculate totalSeasons and totalEpisodes for TV series
     const videosWithCounts = await Promise.all(videos.map(async (video) => {

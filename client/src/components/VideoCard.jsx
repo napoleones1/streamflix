@@ -121,6 +121,7 @@ export default function VideoCard({ video }) {
         <Link to={`/watch/${video._id}`} className="block">
           <div className="relative overflow-hidden rounded-md bg-gray-800 aspect-video">
             <img 
+              loading="lazy"
               src={video.thumbnailUrl || `https://source.unsplash.com/400x225/?${video.category || 'video'}`} 
               alt={video.title}
               className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
@@ -202,6 +203,7 @@ export default function VideoCard({ video }) {
           <Link to={`/watch/${video._id}`}>
             <div className="relative aspect-video rounded-t-lg overflow-hidden">
               <img 
+                loading="lazy"
                 src={video.thumbnailUrl || `https://source.unsplash.com/400x225/?${video.category || 'video'}`}
                 alt={video.title}
                 className="w-full h-full object-cover"
@@ -299,6 +301,7 @@ export default function VideoCard({ video }) {
             {/* Video Preview */}
             <div className="relative aspect-video bg-black rounded-t-lg overflow-hidden">
               <img 
+                loading="lazy"
                 src={video.thumbnailUrl || `https://source.unsplash.com/800x450/?${video.category || 'video'}`}
                 alt={video.title}
                 className="w-full h-full object-cover"
@@ -406,6 +409,7 @@ export default function VideoCard({ video }) {
                   >
                     {video.creator.avatar ? (
                       <img 
+                        loading="lazy"
                         src={video.creator.avatar}
                         alt={video.creator.channelName || video.creator.username}
                         className="w-10 h-10 rounded-full object-cover"

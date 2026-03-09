@@ -20,7 +20,7 @@ export default function Search() {
   const searchVideos = async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get(`/api/videos/search?q=${encodeURIComponent(query)}&filter=${filter}`);
+      const { data } = await axios.get(`/api/videos/search?q=${encodeURIComponent(query)}&filter=${filter}&limit=50`);
       // Filter out episodes - only show main series and regular videos
       const filtered = data.filter(v => !v.isEpisode);
       setResults(filtered);
