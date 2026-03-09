@@ -31,18 +31,34 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 let cachedDb = null;
 
 async function connectToDatabase() {
-  if (cachedDb) {
+  if (cachedDb && mongoose.connection.readyState === 1) {
+    console.log('Using cached database connection');
     return cachedDb;
   }
 
-  const connection = await mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000,
-  });
+  try {
+    console.log('Creating new database connection...');
+    
+    // Close existing connection if any
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.close();
+    }
 
-  cachedDb = connection;
-  return connection;
+    const connection = await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+      minPoolSize: 2,
+    });
+
+    cachedDb = connection;
+    console.log('Database connected successfully');
+    return connection;
+  } catch (error) {
+    console.error('Database connection error:', error);
+    cachedDb = null;
+    throw error;
+  }
 }
 
 // Routes
@@ -58,13 +74,16 @@ app.use('/api/creator-request', creatorRequestRoutes);
 
 // Health check
 app.get('/api', (req, res) => {
-  res.json({ message: 'StreamFlix API is running on Vercel!' });
+  res.json({ 
+    message: 'StreamFlix API is running on Vercel!',
+    dbStatus: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
 });
 
 // Error handling
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  console.error('Error:', err.stack);
+  res.status(500).json({ error: err.message || 'Something went wrong!' });
 });
 
 // Vercel serverless handler
@@ -73,7 +92,10 @@ export default async function handler(req, res) {
     await connectToDatabase();
     return app(req, res);
   } catch (error) {
-    console.error('Database connection error:', error);
-    return res.status(500).json({ error: 'Database connection failed' });
+    console.error('Handler error:', error);
+    return res.status(500).json({ 
+      error: 'Database connection failed',
+      details: error.message 
+    });
   }
 }
