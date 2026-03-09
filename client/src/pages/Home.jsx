@@ -84,34 +84,32 @@ export default function Home() {
         return;
       }
 
-      // Batch fetch all videos at once instead of one by one
-      const validVideoIds = validEntries.map(([id]) => id);
+      const continueList = [];
       
-      try {
-        // Fetch multiple videos in one request
-        const response = await axios.post('/api/videos/batch', { videoIds: validVideoIds });
-        
-        // Map videos with their progress data
-        const continueList = response.data.map(video => {
-          const historyData = history[video._id];
-          return {
-            _id: video._id,
-            video: video,
-            progress: historyData.progress,
-            duration: historyData.duration || historyData.progress * 2,
-            lastWatched: historyData.lastWatched
-          };
-        });
-        
-        // Sort by last watched (most recent first)
-        continueList.sort((a, b) => new Date(b.lastWatched) - new Date(a.lastWatched));
-        
-        // Limit to 20 videos
-        setContinueWatching(continueList.slice(0, 20));
-      } catch (err) {
-        console.error('Error fetching continue watching videos:', err);
-        setContinueWatching([]);
+      // Fetch videos one by one (safer approach)
+      for (const [videoId, data] of validEntries) {
+        try {
+          const response = await axios.get(`/api/videos/${videoId}`);
+          if (response.data) {
+            continueList.push({
+              _id: videoId,
+              video: response.data,
+              progress: data.progress,
+              duration: data.duration || data.progress * 2,
+              lastWatched: data.lastWatched
+            });
+          }
+        } catch (err) {
+          // Video not found or deleted, skip it
+          continue;
+        }
       }
+      
+      // Sort by last watched (most recent first)
+      continueList.sort((a, b) => new Date(b.lastWatched) - new Date(a.lastWatched));
+      
+      // Limit to 20 videos
+      setContinueWatching(continueList.slice(0, 20));
     } catch (error) {
       console.error('Error in fetchContinueWatching:', error);
       setContinueWatching([]);
