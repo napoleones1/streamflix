@@ -41,8 +41,8 @@ export default function Home() {
   const fetchContent = async () => {
     try {
       const [netflixRes, youtubeRes] = await Promise.all([
-        axios.get('/api/videos?type=netflix&limit=30').catch(() => ({ data: [] })),
-        axios.get('/api/videos?type=youtube&limit=30').catch(() => ({ data: [] }))
+        axios.get('/api/videos?type=netflix').catch(() => ({ data: [] })),
+        axios.get('/api/videos?type=youtube').catch(() => ({ data: [] }))
       ]);
       
       // Filter out episodes - only show main series and regular videos
@@ -51,7 +51,7 @@ export default function Home() {
       
       setNetflixContent(netflixFiltered);
       setYoutubeContent(youtubeFiltered);
-      setTrendingContent([...netflixFiltered, ...youtubeFiltered].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 30));
+      setTrendingContent([...netflixFiltered, ...youtubeFiltered].sort((a, b) => (b.views || 0) - (a.views || 0)));
       setFeatured(netflixFiltered[0] || youtubeFiltered[0]);
     } catch (error) {
       console.error('Error fetching content:', error);
