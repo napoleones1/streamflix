@@ -88,42 +88,9 @@ export default function Upload() {
     }
   };
 
-  const handleThumbnailUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setError('Harap upload file gambar (JPG, PNG, GIF)');
-      return;
-    }
-
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      setError('Ukuran gambar harus kurang dari 2MB');
-      return;
-    }
-
-    setError('');
-
-    try {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        // Just use the base64 directly without compression
-        // Browser will handle the image display
-        const base64String = reader.result;
-        setFormData({ ...formData, thumbnailUrl: base64String });
-        console.log('✅ Thumbnail uploaded, length:', base64String.length);
-      };
-      reader.onerror = () => {
-        setError('Error membaca file');
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error('Upload error:', error);
-      setError('Error mengupload gambar');
-    }
-  };
+  // Removed: handleThumbnailUpload function
+  // Users should use thumbnail URL from CDN (ImgBB, Cloudinary, etc)
+  // No more base64 upload to database
 
   // Extract YouTube video ID - improved regex
   const getYouTubeId = (url) => {
@@ -683,33 +650,15 @@ export default function Upload() {
               </div>
             )}
 
-            {formData.videoType !== 'youtube' && (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Upload from Device</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleThumbnailUpload}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-netflix file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-netflix file:text-white file:cursor-pointer hover:file:bg-red-700"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">
-                    Max size: 2MB | Recommended: 1280x720px | Auto-compressed
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 border-t border-gray-600"></div>
-                  <span className="text-sm text-gray-400">OR</span>
-                  <div className="flex-1 border-t border-gray-600"></div>
-                </div>
-              </div>
-            )}
+            {/* Removed file upload - use URL only */}
 
             <div>
               <label className="block text-sm font-medium mb-2">
                 Thumbnail URL {formData.videoType === 'youtube' && <span className="text-green-500">(Auto-filled from YouTube)</span>}
               </label>
+              <p className="text-xs text-gray-400 mb-2">
+                Upload gambar ke CDN gratis seperti <a href="https://imgbb.com" target="_blank" rel="noopener noreferrer" className="text-netflix hover:underline">ImgBB</a> atau <a href="https://cloudinary.com" target="_blank" rel="noopener noreferrer" className="text-netflix hover:underline">Cloudinary</a>, lalu paste URL-nya di sini
+              </p>
               <input
                 type="url"
                 value={formData.thumbnailUrl.startsWith('data:') ? '' : formData.thumbnailUrl}
