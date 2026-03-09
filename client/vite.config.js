@@ -15,14 +15,23 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console.logs in production
+        drop_debugger: true
+      }
+    },
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
-          axios: ['axios']
+          axios: ['axios'],
+          icons: ['lucide-react']
         }
       }
-    }
+    },
+    chunkSizeWarningLimit: 1000
   },
   base: '/'
 });

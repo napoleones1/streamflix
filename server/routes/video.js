@@ -3,8 +3,31 @@ import { authenticate } from '../middleware/auth.js';
 import Video from '../models/Video.js';
 import Comment from '../models/Comment.js';
 import { createNotification } from './notification.js';
+import cache from '../utils/cache.js';
 
 const router = express.Router();
+
+// Batch fetch videos by IDs (for continue watching optimization)
+router.post('/batch', async (req, res) => {
+  try {
+    const { videoIds } = req.body;
+    
+    if (!videoIds || !Array.isArray(videoIds) || videoIds.length === 0) {
+      return res.json([]);
+    }
+    
+    // Limit to 50 videos max
+    const limitedIds = videoIds.slice(0, 50);
+    
+    const videos = await Video.find({ _id: { $in: limitedIds } })
+      .populate('creator', 'username channelName avatar channelBanner channelDescription subscribers isVerified role')
+      .lean(); // Use lean() for better performance (returns plain JS objects)
+    
+    res.json(videos);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
 
 // Search videos
 router.get('/search', async (req, res) => {
@@ -31,7 +54,8 @@ router.get('/search', async (req, res) => {
     const videos = await Video.find(query)
       .populate('creator', 'username channelName avatar channelBanner channelDescription subscribers isVerified role')
       .sort('-views')
-      .limit(50);
+      .limit(50)
+      .lean(); // Better performance for read-only data
     
     res.json(videos);
   } catch (error) {
@@ -42,6 +66,18 @@ router.get('/search', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { type, category, search, contentType } = req.query;
+    
+    // Create cache key based on query params
+    const cacheKey = `videos:${type || 'all'}:${category || 'all'}:${search || 'none'}:${contentType || 'all'}`;
+    
+    // Check cache first (only for non-search queries)
+    if (!search) {
+      const cachedData = cache.get(cacheKey);
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+    }
+    
     let query = {};
     
     if (type) query.type = type;
@@ -78,6 +114,7 @@ router.get('/', async (req, res) => {
     const videos = await Video.find(query)
       .populate('creator', 'username channelName avatar channelBanner channelDescription subscribers isVerified role')
       .sort('-createdAt')
+      .lean(); // Better performance
     
     // Auto-calculate totalSeasons and totalEpisodes for TV series
     const videosWithCounts = await Promise.all(videos.map(async (video) => {
@@ -85,22 +122,30 @@ router.get('/', async (req, res) => {
         const episodes = await Video.find({
           seriesId: video._id,
           isEpisode: true
-        });
+        }).lean();
         
         if (episodes.length > 0) {
           const maxSeason = Math.max(...episodes.map(ep => ep.seasonNumber || 1));
           const totalEps = episodes.length;
           
-          // Update if changed
+          // Update if changed (need to use findById since video is lean)
           if (video.totalSeasons !== maxSeason || video.totalEpisodes !== totalEps) {
+            await Video.findByIdAndUpdate(video._id, {
+              totalSeasons: maxSeason,
+              totalEpisodes: totalEps
+            });
             video.totalSeasons = maxSeason;
             video.totalEpisodes = totalEps;
-            await video.save();
           }
         }
       }
       return video;
     }));
+    
+    // Cache for 5 minutes (only non-search queries)
+    if (!search) {
+      cache.set(cacheKey, videosWithCounts, 300);
+    }
     
     res.json(videosWithCounts);
   } catch (error) {
@@ -150,6 +195,10 @@ router.post('/', authenticate, async (req, res) => {
     
     const video = new Video(videoData);
     await video.save();
+    
+    // Clear cache when new video is added
+    cache.clear();
+    
     res.status(201).json(video);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -159,12 +208,6 @@ router.post('/', authenticate, async (req, res) => {
 // Update video
 router.put('/:id', authenticate, async (req, res) => {
   try {
-    console.log('Update video request:', req.params.id);
-    console.log('Update data received:', {
-      ...req.body,
-      thumbnailUrl: req.body.thumbnailUrl?.substring(0, 50) + '...'
-    });
-    
     const video = await Video.findById(req.params.id);
     
     if (!video) {
@@ -181,12 +224,13 @@ router.put('/:id', authenticate, async (req, res) => {
     allowedUpdates.forEach(field => {
       if (req.body[field] !== undefined) {
         video[field] = req.body[field];
-        console.log(`Updated ${field}:`, field === 'thumbnailUrl' ? req.body[field]?.substring(0, 50) + '...' : req.body[field]);
       }
     });
     
     await video.save();
-    console.log('Video saved successfully');
+    
+    // Clear cache when video is updated
+    cache.clear();
     
     // Populate creator info for response
     await video.populate('creator', 'username channelName avatar channelBanner channelDescription subscribers isVerified role');
@@ -359,6 +403,10 @@ router.delete('/:id', authenticate, async (req, res) => {
     }
     
     await Video.findByIdAndDelete(req.params.id);
+    
+    // Clear cache when video is deleted
+    cache.clear();
+    
     res.json({ message: 'Video deleted successfully' });
   } catch (error) {
     res.status(400).json({ error: error.message });

@@ -60,66 +60,60 @@ export default function Home() {
 
   const fetchContinueWatching = async () => {
     try {
-      console.log('🔍 Fetching continue watching...');
-      
       // Use localStorage
       const localHistory = localStorage.getItem('watchHistory');
-      console.log('📦 localStorage watchHistory:', localHistory);
       
       if (!localHistory) {
-        console.log('❌ No watch history found in localStorage');
         setContinueWatching([]);
         return;
       }
 
       const history = JSON.parse(localHistory);
       const videoIds = Object.keys(history);
-      console.log('📝 Video IDs in history:', videoIds);
       
       if (videoIds.length === 0) {
-        console.log('❌ Watch history is empty');
         setContinueWatching([]);
         return;
       }
 
-      const continueList = [];
+      // Filter videos with progress > 10 seconds
+      const validEntries = Object.entries(history).filter(([_, data]) => data.progress > 10);
       
-      for (const [videoId, data] of Object.entries(history)) {
-        console.log(`🎬 Processing video ${videoId}:`, data);
-        
-        // Show all videos watched more than 10 seconds
-        if (data.progress > 10) {
-          try {
-            const response = await axios.get(`/api/videos/${videoId}`);
-            if (response.data) {
-              continueList.push({
-                _id: videoId,
-                video: response.data,
-                progress: data.progress,
-                duration: data.duration || data.progress * 2,
-                lastWatched: data.lastWatched
-              });
-              console.log(`✅ Added video to continue watching: ${response.data.title}`);
-            }
-          } catch (err) {
-            console.log(`⚠️ Video not found or deleted: ${videoId}`);
-          }
-        } else {
-          console.log(`⏭️ Skipping video ${videoId} - progress too short (${data.progress}s)`);
-        }
+      if (validEntries.length === 0) {
+        setContinueWatching([]);
+        return;
       }
+
+      // Batch fetch all videos at once instead of one by one
+      const validVideoIds = validEntries.map(([id]) => id);
       
-      // Sort by last watched (most recent first)
-      continueList.sort((a, b) => new Date(b.lastWatched) - new Date(a.lastWatched));
-      
-      // Limit to 20 videos
-      const limitedList = continueList.slice(0, 20);
-      
-      setContinueWatching(limitedList);
-      console.log(`✅ Continue watching loaded: ${limitedList.length} videos`);
-      console.log('📋 Continue watching list:', limitedList);
+      try {
+        // Fetch multiple videos in one request
+        const response = await axios.post('/api/videos/batch', { videoIds: validVideoIds });
+        
+        // Map videos with their progress data
+        const continueList = response.data.map(video => {
+          const historyData = history[video._id];
+          return {
+            _id: video._id,
+            video: video,
+            progress: historyData.progress,
+            duration: historyData.duration || historyData.progress * 2,
+            lastWatched: historyData.lastWatched
+          };
+        });
+        
+        // Sort by last watched (most recent first)
+        continueList.sort((a, b) => new Date(b.lastWatched) - new Date(a.lastWatched));
+        
+        // Limit to 20 videos
+        setContinueWatching(continueList.slice(0, 20));
+      } catch (err) {
+        console.error('Error fetching continue watching videos:', err);
+        setContinueWatching([]);
+      }
     } catch (error) {
-      console.error('❌ Error fetching continue watching:', error);
+      console.error('Error in fetchContinueWatching:', error);
       setContinueWatching([]);
     }
   };

@@ -51,4 +51,12 @@ const videoSchema = new mongoose.Schema({
   }]
 }, { timestamps: true });
 
+// Indexes for performance optimization
+videoSchema.index({ type: 1, createdAt: -1 }); // For fetching netflix/youtube videos sorted by date
+videoSchema.index({ views: -1 }); // For trending/most viewed
+videoSchema.index({ contentType: 1, isSeries: 1, isEpisode: 1 }); // For filtering content types
+videoSchema.index({ creator: 1 }); // For creator's videos
+videoSchema.index({ seriesId: 1, seasonNumber: 1, episodeNumber: 1 }); // For episodes lookup
+videoSchema.index({ title: 'text', description: 'text', tags: 'text' }); // For text search
+
 export default mongoose.model('Video', videoSchema);
