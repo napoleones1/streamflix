@@ -15,6 +15,34 @@ body {
   overflow-x: hidden;
 }
 
+/* Prevent layout shift for images */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Aspect ratio containers to prevent layout shift */
+.aspect-video {
+  aspect-ratio: 16 / 9;
+}
+
+/* Skeleton loading for better perceived performance */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -47,6 +75,23 @@ body {
 /* Smooth transitions */
 .transition-all {
   transition: all 0.3s ease;
+}
+
+/* Optimize font loading */
+@font-face {
+  font-family: 'Netflix Sans';
+  font-display: swap;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Card hover effects */

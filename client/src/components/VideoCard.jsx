@@ -124,6 +124,8 @@ export default function VideoCard({ video }) {
               loading="lazy"
               src={video.thumbnailUrl || `https://source.unsplash.com/400x225/?${video.category || 'video'}`} 
               alt={video.title}
+              width="400"
+              height="225"
               className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
               onError={(e) => {
                 e.target.src = 'https://via.placeholder.com/400x225/1a1a1a/666666?text=No+Thumbnail';
@@ -206,6 +208,8 @@ export default function VideoCard({ video }) {
                 loading="lazy"
                 src={video.thumbnailUrl || `https://source.unsplash.com/400x225/?${video.category || 'video'}`}
                 alt={video.title}
+                width="400"
+                height="225"
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   e.target.src = 'https://via.placeholder.com/400x225/1a1a1a/666666?text=No+Thumbnail';
@@ -304,6 +308,8 @@ export default function VideoCard({ video }) {
                 loading="lazy"
                 src={video.thumbnailUrl || `https://source.unsplash.com/800x450/?${video.category || 'video'}`}
                 alt={video.title}
+                width="800"
+                height="450"
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   e.target.src = 'https://via.placeholder.com/800x450/1a1a1a/666666?text=No+Thumbnail';
